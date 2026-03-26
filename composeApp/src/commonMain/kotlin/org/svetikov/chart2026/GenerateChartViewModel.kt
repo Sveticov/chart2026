@@ -3,23 +3,30 @@ package org.svetikov.chart2026
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.random.Random
-import kotlin.repeat
+import kotlin.time.Clock
 
 class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess()) : ViewModel() {
-    private val _sizeListTake= MutableStateFlow("50")
+    private val _sizeListTake = MutableStateFlow("50")
     val sizeListTake = _sizeListTake.asStateFlow()
     private val _some = MutableStateFlow(0f)
     val some = _some.asStateFlow()
 
-    private val _chartData = MutableStateFlow(listOf(LineData(name = "", values = listOf(0f), color = Color.Blue)))
+    private val _chartData = MutableStateFlow(
+        listOf(
+            LineData(
+                name = "",
+                values = listOf<ChartPoint>(ChartPoint(value = 0f, time = Clock.System.now())),
+                color = Color.Blue
+            )
+        )
+    )
     val chartData: StateFlow<List<LineData>> = _chartData.asStateFlow()
 
     private val _run = MutableStateFlow(true)
@@ -30,6 +37,20 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
     private val _onlyOneData = MutableStateFlow(0f)
     val onlyOneData: StateFlow<Float> = _onlyOneData.asStateFlow()
     private val _processIndex = MutableStateFlow(0)
+
+    private val _chartsData5 = MutableStateFlow<Map<IndexChart, List<LineData>>>(
+        /*  mapOf(
+              IndexChart(0) to listOf(
+                  LineData(
+                      name = "",
+                      values = listOf<ChartPoint>(ChartPoint(value = 0f, time = Clock.System.now())),
+                      color = Color.Blue
+                  )
+              )
+          )*/
+        emptyMap()
+    )
+    val chartData5 = _chartsData5.asStateFlow()
 
     init {
 
@@ -53,26 +74,6 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
 
     }
 
-    private fun addNewValue(value: Float) {
-        if (_chartData.value.size==0){
-            repeat(50){
-                _chartData.update { lines ->
-                    lines.map { line ->
-                        val newValues = (line.values + 0.0f)
-                        line.copy(values = newValues)
-                    }
-                }
-            }
-        }
-        _chartData.update { lines ->
-            lines.map { line ->
-                val newValues = (line.values + value).takeLast(_sizeListTake.value.toInt())
-                line.copy(values = newValues)
-            }
-        }
-
-
-    }
 
     fun getData() {
         viewModelScope.launch {
@@ -106,8 +107,94 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         generate()
     }
 
+    private fun addNewValue(value: Float) {
+        val newPoint = ChartPoint(
+            value = value,
+            time = Clock.System.now()
+        )
+        _chartData.update { lines ->
+            lines.map { line ->
+                val currentValues = if (line.values.size == 1 && line.values.first().value == 0f)
+                    listOf(newPoint)
+                else
+                    line.values + newPoint
+                val newValues = currentValues
+                    .takeLast(_sizeListTake.value.toInt())
+                line.copy(values = newValues)
+            }
+        }
+    }
+
     fun takeId(processId: String) {
         _processIndex.value = _getData.value.indexOfFirst { it.processId == processId }
         initProcess()
     }
+
+
+    fun initChart(index: IndexChart) {
+        if (_chartsData5.value.containsKey(index)) return
+        _chartsData5.update {
+            it + (index to listOf(
+                LineData(
+                    name = "",
+                    values = listOf(
+                        ChartPoint(value = 0f, time = Clock.System.now())
+                    ),
+                    color = Color.Blue
+                )
+            ))
+        }
+    }
+
+    private fun addNewValueToChart5(index: IndexChart, value: Float) {
+        val newPoint = ChartPoint(
+            value = value,
+            time = Clock.System.now()
+        )
+        _chartsData5.update { map ->
+            val lines = map[index] ?: return@update map
+
+            val updatedLines = lines.map { line ->
+                val currentValues =
+                    if (line.values.size == 1 && line.values.first().value == 0f)
+                        listOf(newPoint)
+                    else
+                        line.values + newPoint
+                val newValues = currentValues
+                    .takeLast(_sizeListTake.value.toInt())
+                line.copy(values = newValues)
+            }
+            map + (index to updatedLines)
+        }
+    }
+
+    private val jobs = mutableMapOf<IndexChart, Job>()
+    fun startChart5(index: IndexChart, processId: String) {
+       // println("processId $processId index $index")
+        jobs[index]?.cancel()
+        val model = _getData.value.firstOrNull { it.processId == processId }
+        val indexModel = _getData.value.indexOf(model)
+
+        println("model $model indexModel $indexModel ")
+        if (model == null) {
+            println("❌ model not found in _getData")
+            return
+        }
+        jobs[index] = viewModelScope.launch {
+            while (true) {
+              //  println("while $index processId $processId")
+                delay(500)
+                val value = serviceProcess.getFactoryData()[indexModel]
+                  /*  .find {*//* println( it.processId == model.processId )*//*
+                        it.processId == model.processId
+                    }*/
+                    .processValue.toFloat()
+               // println("value $value")
+                if (_run.value) {
+                    addNewValueToChart5(index, value)
+                }
+            }
+        }
+    }
 }
+

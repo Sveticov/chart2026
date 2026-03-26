@@ -7,34 +7,13 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowCircleDown
 import androidx.compose.material.icons.filled.ArrowCircleUp
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.DividerDefaults.color
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -44,31 +23,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.key.Key.Companion.R
-
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.jetbrains.compose.resources.painterResource
+
 
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.hours
 
 @Composable
-fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel = viewModel { GenerateChartViewModel() }) {
+fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel ) {
     var zoom by remember { mutableStateOf(1f) }
     val scrollState = rememberScrollState()
-    var selectedPoint by remember { mutableStateOf<Pair<Int, Float>?>(null) }
+    var selectedPoint by remember { mutableStateOf<Pair<Int, ChartPoint>?>(null) }
 
-    val max = lines.flatMap { it.values }.maxOrNull() ?: 0f
-    val min = lines.flatMap { it.values }.minOrNull() ?: 0f
+
+    val max = lines.flatMap { it.values.map { v -> v.value } }.maxOrNull() ?: 0f
+    val min = lines.flatMap { it.values.map { v -> v.value } }.minOrNull() ?: 0f
     val range = (max - min).takeIf { it != 0f } ?: 1f
     val textMeasurer = rememberTextMeasurer()
 
@@ -79,6 +53,8 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel = vie
     var density by remember { mutableStateOf(50f) }
     var sizeChart by remember { mutableStateOf(150) }
     val sizeListTake by viewModel.sizeListTake.collectAsState("150")
+
+
     Column {
         Box {
             Canvas(
@@ -104,7 +80,7 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel = vie
                 lines.forEach { line ->
                     val points = line.values.mapIndexed { index, value ->
                         val x = index * stepX
-                        val normalized = if (range == 0f) 0.5f else (value - min) / range
+                        val normalized = if (range == 0f) 0.5f else (value.value - min) / range
                         val y = size.height - normalized * size.height //* animationProgress
                         Offset(x, y)
                     }
@@ -125,19 +101,33 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel = vie
                 }
                 selectedPoint?.let { (index, value) ->
                     val x = index * stepX
-                    val normalized = (value - min) / range
+                    val normalized = (value.value - min) / range
                     val y = size.height - normalized * size.height
 
                     drawCircle(
                         color = Color.Red,
-                        radius = 10f,
+                        radius = 2f,
                         center = Offset(x, y)
                     )
+                    drawLine(
+                        color = Color.Red,
+                        strokeWidth = 2f,
+                        start = Offset(x,  0f),
+                        end = Offset(x, size.height),
+                    )
+
                 }
             }
-            selectedPoint?.let { (index, value) ->
+            selectedPoint?.let { (index, point) ->
+                val localTime = (point.time + 2.hours)
+                    .toString()
+                    .substringAfter("T")
+                    .substringBefore(".")
+
+
                 Text(
-                    text = "index=$index  value=$value",
+                    text =if (lines.isEmpty() || lines.first().values.isEmpty())"No data"
+                    else "index=$index  value=${point.value} time = ${localTime}",
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .background(Color.Black)
@@ -150,7 +140,7 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel = vie
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            ControlButtons()
+            ControlButtons(viewModel)
             Column {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -169,11 +159,11 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel = vie
                         onValueChange = { sizeChart = it.toInt() },
                         label = { Text("size chart") },
                         trailingIcon = {
-                            Row{
-                                IconButton(onClick = { sizeChart+=5 }) {
+                            Row {
+                                IconButton(onClick = { sizeChart += 5 }) {
                                     Icon(imageVector = Icons.Default.ArrowCircleUp, contentDescription = null)
                                 }
-                                IconButton(onClick = { sizeChart-=5 }) {
+                                IconButton(onClick = { sizeChart -= 5 }) {
                                     Icon(imageVector = Icons.Default.ArrowCircleDown, contentDescription = null)
                                 }
                             }

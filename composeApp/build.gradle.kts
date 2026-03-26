@@ -28,6 +28,7 @@ kotlin {
             implementation(libs.ktor.client.core)
             // implementation(libs.ktor.client.cio)
             // implementation(libs.ktor.client.js)
+            //implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
             implementation(compose.materialIconsExtended)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization)
