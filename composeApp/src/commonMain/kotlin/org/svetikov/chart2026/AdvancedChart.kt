@@ -4,10 +4,12 @@ package org.svetikov.chart2026
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowCircleDown
@@ -34,8 +36,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.hours
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel ) {
+fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel) {
     var zoom by remember { mutableStateOf(1f) }
     val scrollState = rememberScrollState()
     var selectedPoint by remember { mutableStateOf<Pair<Int, ChartPoint>?>(null) }
@@ -53,7 +56,7 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel ) {
     var density by remember { mutableStateOf(50f) }
     var sizeChart by remember { mutableStateOf(150) }
     val sizeListTake by viewModel.sizeListTake.collectAsState("150")
-
+    var hideControlButton by remember { mutableStateOf(true) }
 
     Column {
         Box {
@@ -112,7 +115,7 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel ) {
                     drawLine(
                         color = Color.Red,
                         strokeWidth = 2f,
-                        start = Offset(x,  0f),
+                        start = Offset(x, 0f),
                         end = Offset(x, size.height),
                     )
 
@@ -126,19 +129,22 @@ fun AdvancedChart(lines: List<LineData>, viewModel: GenerateChartViewModel ) {
 
 
                 Text(
-                    text =if (lines.isEmpty() || lines.first().values.isEmpty())"No data"
+                    text = if (lines.isEmpty() || lines.first().values.isEmpty()) "No data"
                     else "index=$index  value=${point.value} time = ${localTime}",
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .background(Color.Black)
-                        .padding(6.dp),
+                        .padding(6.dp)
+                        .onClick(onClick = {hideControlButton=!hideControlButton} ),
                     color = Color.White
                 )
             }
         }
         Spacer(Modifier.height(16.dp))
+        if(hideControlButton)
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
+
         ) {
             ControlButtons(viewModel)
             Column {

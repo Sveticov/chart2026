@@ -1,5 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.internal.platform.wasm.WasmPlatforms.wasmJs
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -80,3 +81,5 @@ compose.desktop {
         }
     }
 }
+
+
