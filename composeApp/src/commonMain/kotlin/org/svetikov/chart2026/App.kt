@@ -49,7 +49,8 @@ fun App() {
                     Icon(Icons.Default.Brightness7, contentDescription = "")
             }
            // RealTimeChartScreen(colorTheme=colorTheme)
-            ShowAllCharts(colorTheme=colorTheme)
+           // ShowAllCharts(colorTheme=colorTheme)
+            AppTableData()
         }
 
 

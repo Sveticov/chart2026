@@ -91,6 +91,24 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         }
     }
 
+    private val _dataTable = MutableStateFlow<List<ModelProcess>>(emptyList())
+    val dataTable = _dataTable.asStateFlow()
+
+    private val _dataGroupTable = MutableStateFlow<Map<String, List<ModelProcess>>>(emptyMap())
+    val dataGroupTable = _dataGroupTable.asStateFlow()
+    fun getDataForTable() {
+        viewModelScope.launch {
+            while (true) {
+                val data = serviceProcess.getFactoryData()
+                val dataGroups = data.groupBy { it.processNamePLC }
+                _dataGroupTable.value = dataGroups
+                _dataTable.value = data
+                delay(1000)
+            }
+
+        }
+    }
+
     private fun initProcess() {
         val index = _processIndex.value
         viewModelScope.launch {
@@ -170,7 +188,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
 
     private val jobs = mutableMapOf<IndexChart, Job>()
     fun startChart5(index: IndexChart, processId: String) {
-       // println("processId $processId index $index")
+        // println("processId $processId index $index")
         jobs[index]?.cancel()
         val model = _getData.value.firstOrNull { it.processId == processId }
         val indexModel = _getData.value.indexOf(model)
@@ -182,14 +200,14 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         }
         jobs[index] = viewModelScope.launch {
             while (true) {
-              //  println("while $index processId $processId")
+                //  println("while $index processId $processId")
                 delay(500)
                 val value = serviceProcess.getFactoryData()[indexModel]
-                  /*  .find {*//* println( it.processId == model.processId )*//*
+                    /*  .find {*//* println( it.processId == model.processId )*//*
                         it.processId == model.processId
                     }*/
                     .processValue.toFloat()
-               // println("value $value")
+                // println("value $value")
                 if (_run.value) {
                     addNewValueToChart5(index, value)
                 }
