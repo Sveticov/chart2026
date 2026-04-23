@@ -10,5 +10,6 @@ data class ModelProcess(
     val processName:String="",
     val processMin:String="",
     val processMax:String="",
-    val processStatus:String=""
+    val processStatus:String="",
+    val trend:Int=0,
 )

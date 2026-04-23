@@ -52,9 +52,6 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
     )
     val chartData5 = _chartsData5.asStateFlow()
 
-    init {
-
-    }
 
     fun sizeListTakeInit(size: String) {
         _sizeListTake.value = size
@@ -91,21 +88,67 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         }
     }
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
     private val _dataTable = MutableStateFlow<List<ModelProcess>>(emptyList())
-    val dataTable = _dataTable.asStateFlow()
-
     private val _dataGroupTable = MutableStateFlow<Map<String, List<ModelProcess>>>(emptyMap())
     val dataGroupTable = _dataGroupTable.asStateFlow()
     fun getDataForTable() {
         viewModelScope.launch {
-            while (true) {
-                val data = serviceProcess.getFactoryData()
-                val dataGroups = data.groupBy { it.processNamePLC }
-                _dataGroupTable.value = dataGroups
-                _dataTable.value = data
-                delay(1000)
+            _isLoading.value = true
+            try {
+                while (true) {
+                    _isRefreshing.value = true
+                    val dataOld = _dataTable.value
+                    val newData = serviceProcess.getFactoryData()
+                    //  println(dataOld)
+                    val newDataWithTrend = newData.map { newItem ->
+                        val oldItem = dataOld.find {
+                            //  println(it.processName)
+                            it.processName == newItem.processName
+                        }
+
+                        val calculateTrend = when {
+                            oldItem == null -> 0
+                            newItem.processValue.toDouble() > oldItem.processValue.toDouble() -> 1
+                            newItem.processValue.toDouble() < oldItem.processValue.toDouble() -> -1
+                            else -> 0
+                        }
+
+
+                        newItem.copy(trend = calculateTrend)
+                    }
+
+                    val dataGroups = newDataWithTrend.groupBy { it.processNamePLC }
+                    //println(dataGroups)
+                    _dataGroupTable.value = dataGroups
+                    _dataTable.value = newDataWithTrend
+                    println(_dataTable.value)
+                    delay(1000)
+                }
+            } catch (e: Exception) {
+                _isLoading.value = false
+            } finally {
+                _isRefreshing.value = false
+                delay(2000)
             }
 
+        }
+    }
+
+    private val _dateTimeSecondShow = MutableStateFlow(0)
+    val dateTimeSecondShow = _dateTimeSecondShow.asStateFlow()
+    fun dateShow() {
+        viewModelScope.launch {
+            var count = 0
+            while (true) {
+
+                _dateTimeSecondShow.update { count++ }
+                delay(1000)
+                if (count > 10) count = 0
+            }
         }
     }
 
