@@ -116,8 +116,6 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                             newItem.processValue.toDouble() < oldItem.processValue.toDouble() -> -1
                             else -> 0
                         }
-
-
                         newItem.copy(trend = calculateTrend)
                     }
 

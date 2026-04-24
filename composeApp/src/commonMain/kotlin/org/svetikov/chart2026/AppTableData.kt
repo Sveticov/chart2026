@@ -51,7 +51,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartViewModel() }) {
     LaunchedEffect(Unit) {
         viewModel.getDataForTable()
-        viewModel.dateShow()
+       // viewModel.dateShow()
     }
 
     val dataTableGroup: Map<String, List<ModelProcess>> = viewModel.dataGroupTable.collectAsState().value
@@ -109,7 +109,8 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                                     } else {
                                         Icon(
                                             imageVector = Icons.Default.Coffee,
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            tint = Color(0xFFC87FF3)
                                         )
                                     }
                                 }
