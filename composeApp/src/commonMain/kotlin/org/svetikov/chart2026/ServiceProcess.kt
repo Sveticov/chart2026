@@ -24,4 +24,7 @@ class ServiceProcess {
 
     suspend fun getFactoryData()=
         client.get("http://10.10.12.137:8083/model_process").body<List<ModelProcess>>()
+
+    suspend fun getMessagesFromBot() =
+        client.get ("http://10.10.12.137:8080/bot/messages").body<List<MessageStatus>>()
 }

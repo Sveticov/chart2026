@@ -2,28 +2,39 @@ package org.svetikov.chart2026
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.BlurOff
+import androidx.compose.material.icons.filled.BlurOn
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.ForkLeft
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,34 +48,125 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Month
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartViewModel() }) {
     LaunchedEffect(Unit) {
         viewModel.getDataForTable()
-       // viewModel.dateShow()
+        // viewModel.dateShow()
+        viewModel.getMessagesFromBot()
     }
 
     val dataTableGroup: Map<String, List<ModelProcess>> = viewModel.dataGroupTable.collectAsState().value
     val isLoading = viewModel.isLoading.collectAsState()
-    val dateTimeCountShow = viewModel.dateTimeSecondShow.collectAsState()
+
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+
+    val lastUpdate by viewModel.lastUpdate.collectAsState()
+    val lastUpdateStatus by viewModel.lastUpdateStatus.collectAsState()
+
+    val messageStatus by viewModel.messageStatus.collectAsState()
+
+    val scope = rememberCoroutineScope()
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column {
-            if (isRefreshing){
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().height(2.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                )
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (isRefreshing) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().height(2.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = if (lastUpdateStatus.isNotEmpty()) "Last update: $lastUpdateStatus" else "Waite data...",
+                        style = MaterialTheme.typography.labelSmall,
+                       // color = if (isRefreshing) Color.Blue else Color.Gray,
+                        modifier = Modifier.fillMaxWidth(0.25f).clickable(onClick = {viewModel.sound()})
+                    )
+
+                    Row(modifier = Modifier.fillMaxWidth(0.5f)) {
+                        messageStatus.forEach { it ->
+                            var isHovered by remember { mutableStateOf(false) }
+                            var isStatus by remember { mutableStateOf(false) }
+                            val st = if (it.id == 0) !it.status else it.status
+                            if (st!=isStatus){
+                                scope.launch {
+                                    isHovered=true
+
+                                    delay(10000)
+                                    isStatus = st
+                                    isHovered=false
+                                }
+
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+                                    .onPointerEvent(PointerEventType.Exit) { isHovered = false }
+                                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (st) Icons.Default.Done else Icons.Default.Clear,
+                                    contentDescription = null,
+                                    tint = if (st) Color.Green else Color.Red,
+                                    modifier = Modifier.size(22.dp).padding(4.dp)
+                                )
+                                if (isHovered) {
+                                    Box(
+                                        modifier = Modifier
+                                            .offset(y = (-40).dp) // Піднімаємо текст над іконкою
+                                            .background(Color(0xFF333333), RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = it.message,
+                                            color = Color.White,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Text(
+                        text = if (lastUpdate.isNotEmpty()) "Last update: $lastUpdate" else "Waite data...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isRefreshing) Color.Blue else Color.Gray,
+                        modifier = Modifier.fillMaxWidth(0.5f)
+                    )
+                }
             }
             LazyVerticalStaggeredGrid(
                 columns = StaggeredGridCells.Fixed(3),
@@ -97,7 +199,8 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                                     Text(
                                         p.processValue,
                                         fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.End
+                                        textAlign = TextAlign.End,
+                                        color = if(p.processValue.toFloat()>p.processMax.toFloat()) Color.Red else Color.Black,
                                     )
                                     if (p.trend != 0) {
                                         Icon(
@@ -122,6 +225,49 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                         }
                     }
 
+                }
+
+                item() {
+                    Box(
+                        Modifier.fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                            .padding(12.dp)
+                    ) {
+                        Column {
+                            messageStatus.forEach { it ->
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    var text = it.message + " \n" + it.date
+                                    val st = if (it.id == 0) !it.status else it.status
+
+
+
+                                    if (text.length > 45)
+                                        text = text.chunked(35).joinToString("\n")
+
+                                    Text(text, style = MaterialTheme.typography.bodySmall)
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Icon(
+                                        imageVector = if (st) Icons.Default.Done else Icons.Default.Clear,
+                                        contentDescription = null,
+                                        tint = if (st) Color.Green else Color.Red
+                                    )
+
+                                }
+                                HorizontalDivider(
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                )
+                            }
+                        }
+
+                    }
                 }
             }
         }

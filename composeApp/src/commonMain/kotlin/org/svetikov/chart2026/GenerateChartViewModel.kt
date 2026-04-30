@@ -10,7 +10,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.time.Clock
+/*import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime*/
+import kotlin.time.*
+import kotlinx.datetime.*
+import kotlinx.datetime.format.*
+import kotlin.time.Duration.Companion.hours
+
+
+
+/*import kotlin.time.Instant*/
 
 class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess()) : ViewModel() {
     private val _sizeListTake = MutableStateFlow("50")
@@ -22,7 +31,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         listOf(
             LineData(
                 name = "",
-                values = listOf<ChartPoint>(ChartPoint(value = 0f, time = Clock.System.now())),
+                values = listOf<ChartPoint>(ChartPoint(value = 0f, time = kotlin.time.Clock.System.now())),
                 color = Color.Blue
             )
         )
@@ -88,6 +97,8 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         }
     }
 
+    private val _lastUpdate = MutableStateFlow("")
+    val lastUpdate = _lastUpdate.asStateFlow()
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
     private val _isRefreshing = MutableStateFlow(false)
@@ -95,6 +106,14 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
     private val _dataTable = MutableStateFlow<List<ModelProcess>>(emptyList())
     private val _dataGroupTable = MutableStateFlow<Map<String, List<ModelProcess>>>(emptyMap())
     val dataGroupTable = _dataGroupTable.asStateFlow()
+    val format = LocalDateTime.Format {
+        hour()
+        char(':')
+        minute()
+        char(':')
+        second()
+    }
+
     fun getDataForTable() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -103,6 +122,13 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                     _isRefreshing.value = true
                     val dataOld = _dataTable.value
                     val newData = serviceProcess.getFactoryData()
+                    //time server responde
+                    val currentMoment: kotlin.time.Instant = kotlin.time.Clock.System.now()
+                    val datetime = currentMoment.plus(3.hours)//.toLocalDateTime(TimeZone.currentSystemDefault())
+
+                    _lastUpdate.value =
+                        datetime.toString()//.format(format)//"${datetime.hour.toString().padStart(2, '0')}:${datetime.minute.toString().padStart(2, '0')}:${datetime.second.toString().padStart(2, '0')}"
+
                     //  println(dataOld)
                     val newDataWithTrend = newData.map { newItem ->
                         val oldItem = dataOld.find {
@@ -169,7 +195,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
     private fun addNewValue(value: Float) {
         val newPoint = ChartPoint(
             value = value,
-            time = Clock.System.now()
+            time = kotlin.time.Clock.System.now()
         )
         _chartData.update { lines ->
             lines.map { line ->
@@ -197,7 +223,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                 LineData(
                     name = "",
                     values = listOf(
-                        ChartPoint(value = 0f, time = Clock.System.now())
+                        ChartPoint(value = 0f, time = kotlin.time.Clock.System.now())
                     ),
                     color = Color.Blue
                 )
@@ -208,7 +234,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
     private fun addNewValueToChart5(index: IndexChart, value: Float) {
         val newPoint = ChartPoint(
             value = value,
-            time = Clock.System.now()
+            time = kotlin.time.Clock.System.now()
         )
         _chartsData5.update { map ->
             val lines = map[index] ?: return@update map
@@ -255,5 +281,51 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
             }
         }
     }
+
+    fun sound(){
+        notificationAlarm()
+    }
+
+    private val _messagesStatus = MutableStateFlow<List<MessageStatus>>(emptyList())
+    val messageStatus = _messagesStatus.asStateFlow()
+    private val _status = MutableStateFlow<List<Boolean>>(emptyList())
+    private val _lastUpdateStatus = MutableStateFlow("")
+    val lastUpdateStatus = _lastUpdateStatus.asStateFlow()
+    fun getMessagesFromBot() {
+
+        viewModelScope.launch {
+            while (true) {
+                val currentMoment: kotlin.time.Instant = kotlin.time.Clock.System.now()
+                val datetime = currentMoment.plus(3.hours)
+                val mess/*_messagesStatus.value */ = serviceProcess.getMessagesFromBot()
+                if (_status.value.isNotEmpty()) {
+                   // println("if (_status.value.isNotEmpty()) ${_status.value.isNotEmpty()}")
+                    _messagesStatus.value = mess.mapIndexed { index, it ->
+                        if (it.status != _status.value[index]) {
+                            //println(" if (it.status != _status.value[index]) ${it.status != _status.value[index]}")
+                            notificationAlarm()
+                            it.copy(
+                                date = datetime.toString()
+                            )
+                        } else {
+                            println("else (it.status != _status.value[index]) ${it.status != _status.value[index]}")
+                            it.copy(date = _messagesStatus.value[index].date)
+                        }
+
+                    }
+                } else _messagesStatus.value = mess
+                _status.value = mess.map { it.status }
+                _lastUpdateStatus.value = datetime.toString()
+                /* println(_messagesStatus.value)*/
+
+
+
+                delay(3000)
+            }
+        }
+
+    }
+
+
 }
 

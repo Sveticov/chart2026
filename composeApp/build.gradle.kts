@@ -26,6 +26,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
             implementation(libs.ktor.client.core)
             // implementation(libs.ktor.client.cio)
             // implementation(libs.ktor.client.js)
