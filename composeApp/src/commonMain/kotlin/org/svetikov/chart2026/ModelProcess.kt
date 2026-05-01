@@ -1,5 +1,6 @@
 package org.svetikov.chart2026
 
+import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,4 +13,5 @@ data class ModelProcess(
     val processMax:String="",
     val processStatus:String="",
     val trend:Int=0,
+    val color: Boolean=false,
 )

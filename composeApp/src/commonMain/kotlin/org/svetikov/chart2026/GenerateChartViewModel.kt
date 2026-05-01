@@ -142,14 +142,15 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                             newItem.processValue.toDouble() < oldItem.processValue.toDouble() -> -1
                             else -> 0
                         }
-                        newItem.copy(trend = calculateTrend)
+                        val color = if (newItem.processValue.toDouble()>=newItem.processMax.toDouble()) true else false
+                        newItem.copy(trend = calculateTrend, color = color)
                     }
 
                     val dataGroups = newDataWithTrend.groupBy { it.processNamePLC }
                     //println(dataGroups)
                     _dataGroupTable.value = dataGroups
                     _dataTable.value = newDataWithTrend
-                    println(_dataTable.value)
+                  //  println(_dataTable.value)
                     delay(1000)
                 }
             } catch (e: Exception) {

@@ -91,7 +91,7 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
 
     val messageStatus by viewModel.messageStatus.collectAsState()
 
-    var _isWarning by remember { mutableStateOf(false) }
+
 
     val scope = rememberCoroutineScope()
 
@@ -180,6 +180,8 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
             ) {
                 // item {  Text(dateTimeCountShow.value.toString(), modifier = Modifier.align(Alignment.TopCenter)) }
                 items(dataTableGroup.toList()) { (plcName, plcGroup) ->
+                   // var _isWarning by remember { mutableStateOf(false) }
+                    var _isHideGroups by remember { mutableStateOf(true) }
                     Box(
                         Modifier.fillMaxWidth()
                             .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
@@ -191,13 +193,14 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                                 plcName,
                                 style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
                                 else MaterialTheme.typography.titleMedium,
-                                color = if (_isWarning) Color.Red.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                color = if (plcGroup.any { it.color }) Color.Red.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 8.dp).clickable(onClick = {_isHideGroups = !_isHideGroups})
                             )
+                            if (_isHideGroups)
                             plcGroup.forEach { p ->
-                                if (p.processValue.toFloat() > p.processMax.toFloat()) {
+                              /*  if (p.processValue.toFloat() > p.processMax.toFloat()) {
                                     _isWarning = true
-                                } else _isWarning = false
+                                } else _isWarning = false*/
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(vertical = 4.dp),
@@ -216,7 +219,7 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                                         else MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.End,
-                                        color = if (_isWarning) Color.Red else Color.Black,
+                                        color = if (p.color) Color.Red else Color.Black,
                                     )
                                     if (p.trend != 0) {
                                         Icon(
@@ -236,8 +239,8 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                                     }
                                 }
                                 HorizontalDivider(
-                                    thickness = if (_isWarning) 0.7.dp else 0.5.dp,
-                                    color = if (_isWarning) Color.Red.copy(alpha = 0.7f)
+                                    thickness = if (p.color) 0.7.dp else 0.5.dp,
+                                    color = if (p.color) Color.Red.copy(alpha = 0.7f)
                                     else MaterialTheme.colorScheme.outline.copy(
                                         alpha = 0.3f
                                     )
@@ -256,6 +259,15 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                             .padding(12.dp)
                     ) {
                         Column {
+                            var _isHideGroups by remember { mutableStateOf(true) }
+                            Text(
+                                "Status Line",
+                                style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                else MaterialTheme.typography.titleMedium,
+                                color =  MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 8.dp).clickable(onClick = {_isHideGroups = !_isHideGroups})
+                            )
+                            if (_isHideGroups)
                             messageStatus.forEach { it ->
 
                                 Row(

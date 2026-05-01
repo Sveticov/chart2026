@@ -3,7 +3,7 @@ title Industrial Monitor - 192.168.0.110
 color 0A
 
 
-set DIST_PATH=build\dist\wasmJs\productionExecutable
+set DIST_PATH=build\dist\js\productionExecutable
 set PORT=8001
 set MY_IP=192.168.0.110
 
