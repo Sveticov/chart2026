@@ -1,3 +1,5 @@
+@file:Suppress("EQUALITY_NOT_APPLICABLE_WARNING")
+
 package org.svetikov.chart2026
 
 import androidx.compose.foundation.background
@@ -72,7 +74,7 @@ import kotlinx.datetime.Month
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartViewModel() }) {
+fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewModel { GenerateChartViewModel() }) {
     LaunchedEffect(Unit) {
         viewModel.getDataForTable()
         // viewModel.dateShow()
@@ -88,6 +90,8 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
     val lastUpdateStatus by viewModel.lastUpdateStatus.collectAsState()
 
     val messageStatus by viewModel.messageStatus.collectAsState()
+
+    var _isWarning by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -111,8 +115,8 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                     Text(
                         text = if (lastUpdateStatus.isNotEmpty()) "Last update: $lastUpdateStatus" else "Waite data...",
                         style = MaterialTheme.typography.labelSmall,
-                       // color = if (isRefreshing) Color.Blue else Color.Gray,
-                        modifier = Modifier.fillMaxWidth(0.25f).clickable(onClick = {viewModel.sound()})
+                        color = Color.Blue,
+                        modifier = Modifier.fillMaxWidth(0.25f).clickable(onClick = { viewModel.sound() })
                     )
 
                     Row(modifier = Modifier.fillMaxWidth(0.5f)) {
@@ -120,13 +124,13 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                             var isHovered by remember { mutableStateOf(false) }
                             var isStatus by remember { mutableStateOf(false) }
                             val st = if (it.id == 0) !it.status else it.status
-                            if (st!=isStatus){
+                            if (st != isStatus && !isLoading.value) {
                                 scope.launch {
-                                    isHovered=true
+                                    isHovered = true
 
                                     delay(10000)
                                     isStatus = st
-                                    isHovered=false
+                                    isHovered = false
                                 }
 
                             }
@@ -134,7 +138,7 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                                 modifier = Modifier
                                     .onPointerEvent(PointerEventType.Enter) { isHovered = true }
                                     .onPointerEvent(PointerEventType.Exit) { isHovered = false }
-                                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp)),
+                                    /*.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))*/,
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -146,7 +150,7 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                                 if (isHovered) {
                                     Box(
                                         modifier = Modifier
-                                            .offset(y = (-40).dp) // Піднімаємо текст над іконкою
+                                            .offset(y = (-20).dp)
                                             .background(Color(0xFF333333), RoundedCornerShape(8.dp))
                                             .padding(horizontal = 12.dp, vertical = 6.dp)
                                     ) {
@@ -169,10 +173,10 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                 }
             }
             LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(3),
+                columns = StaggeredGridCells.Fixed(rowCount),
                 modifier = Modifier.fillMaxSize().padding(8.dp),
-                verticalItemSpacing = 12.dp,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalItemSpacing = 8.dp,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // item {  Text(dateTimeCountShow.value.toString(), modifier = Modifier.align(Alignment.TopCenter)) }
                 items(dataTableGroup.toList()) { (plcName, plcGroup) ->
@@ -185,41 +189,58 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                         Column {
                             Text(
                                 plcName,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary,
+                                style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                else MaterialTheme.typography.titleMedium,
+                                color = if (_isWarning) Color.Red.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             plcGroup.forEach { p ->
+                                if (p.processValue.toFloat() > p.processMax.toFloat()) {
+                                    _isWarning = true
+                                } else _isWarning = false
                                 Row(
                                     modifier = Modifier.fillMaxWidth()
                                         .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(p.processName, modifier = Modifier.weight(1f))
+                                    Text(
+                                        p.processName,
+                                        style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                        else MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
                                     Text(
                                         p.processValue,
+                                        style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                        else MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.End,
-                                        color = if(p.processValue.toFloat()>p.processMax.toFloat()) Color.Red else Color.Black,
+                                        color = if (_isWarning) Color.Red else Color.Black,
                                     )
                                     if (p.trend != 0) {
                                         Icon(
                                             imageVector = if (p.trend > 0) Icons.Default.ArrowDropUp
                                             else Icons.Default.ArrowDropDown,
                                             contentDescription = null,
-                                            tint = if (p.trend > 0) Color.Green else Color.Red
+                                            tint = if (p.trend > 0) Color.Green else Color.Red,
+                                            modifier = Modifier.size(if (rowCount <= 3) 22.dp else 15.dp)
                                         )
                                     } else {
                                         Icon(
                                             imageVector = Icons.Default.Coffee,
                                             contentDescription = null,
-                                            tint = Color(0xFFC87FF3)
+                                            tint = Color(0xFFC87FF3),
+                                            modifier = Modifier.size(if (rowCount <= 3) 22.dp else 15.dp)
                                         )
                                     }
                                 }
                                 HorizontalDivider(
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                    thickness = if (_isWarning) 0.7.dp else 0.5.dp,
+                                    color = if (_isWarning) Color.Red.copy(alpha = 0.7f)
+                                    else MaterialTheme.colorScheme.outline.copy(
+                                        alpha = 0.3f
+                                    )
                                 )
                             }
                         }
@@ -245,18 +266,21 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                                     var text = it.message + " \n" + it.date
                                     val st = if (it.id == 0) !it.status else it.status
 
-
-
                                     if (text.length > 45)
                                         text = text.chunked(35).joinToString("\n")
 
-                                    Text(text, style = MaterialTheme.typography.bodySmall)
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.fillMaxWidth(0.7f)
+                                    )
+
 
                                     Icon(
                                         imageVector = if (st) Icons.Default.Done else Icons.Default.Clear,
                                         contentDescription = null,
-                                        tint = if (st) Color.Green else Color.Red
+                                        tint = if (st) Color.Green else Color.Red,
+                                        modifier = Modifier.fillMaxWidth(0.3f)
                                     )
 
                                 }
@@ -268,6 +292,12 @@ fun AppTableData(viewModel: GenerateChartViewModel = viewModel { GenerateChartVi
                         }
 
                     }
+                }
+                item {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
                 }
             }
         }
