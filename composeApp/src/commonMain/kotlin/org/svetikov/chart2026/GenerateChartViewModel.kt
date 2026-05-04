@@ -18,7 +18,6 @@ import kotlinx.datetime.format.*
 import kotlin.time.Duration.Companion.hours
 
 
-
 /*import kotlin.time.Instant*/
 
 class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess()) : ViewModel() {
@@ -105,6 +104,22 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
     val isRefreshing = _isRefreshing.asStateFlow()
     private val _dataTable = MutableStateFlow<List<ModelProcess>>(emptyList())
     private val _dataGroupTable = MutableStateFlow<Map<String, List<ModelProcess>>>(emptyMap())
+
+    private val _ignoreNameProcessColorMin = MutableStateFlow<List<String>>(emptyList())
+    val ignoreNameProcessColorMin = _ignoreNameProcessColorMin.asStateFlow()
+    fun ignoreNameProcessColorMinAdd(nameProcess: String) {
+        //  println(nameProcess)
+        if (nameProcess in _ignoreNameProcessColorMin.value)
+            _ignoreNameProcessColorMin.update { currentList ->
+                currentList - nameProcess
+            }
+        else
+            _ignoreNameProcessColorMin.update { currentList ->
+                currentList + nameProcess
+            }
+        //  println(ignoreNameProcessColorMin.value)
+    }
+
     val dataGroupTable = _dataGroupTable.asStateFlow()
     val format = LocalDateTime.Format {
         hour()
@@ -142,15 +157,29 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                             newItem.processValue.toDouble() < oldItem.processValue.toDouble() -> -1
                             else -> 0
                         }
-                        val color = if (newItem.processValue.toDouble()>=newItem.processMax.toDouble()) true else false
-                        newItem.copy(trend = calculateTrend, color = color)
+                        val color = if (newItem.processValue.toDouble() >= newItem.processMax.toDouble()) {
+                            true
+                        } else false
+                        val ignoreColor = newItem.processName in _ignoreNameProcessColorMin.value
+                        val colorMin =
+                            if (newItem.processValue.toDouble() <= newItem.processMin.toDouble() && !ignoreColor) {
+                                true
+                            } else false
+
+
+                        newItem.copy(
+                            trend = calculateTrend,
+                            color = color,
+                            colorMin = colorMin,
+                            ignoreColorMin = ignoreColor
+                        )
                     }
 
                     val dataGroups = newDataWithTrend.groupBy { it.processNamePLC }
                     //println(dataGroups)
                     _dataGroupTable.value = dataGroups
                     _dataTable.value = newDataWithTrend
-                  //  println(_dataTable.value)
+                    //  println(_dataTable.value)
                     delay(1000)
                 }
             } catch (e: Exception) {
@@ -283,7 +312,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
         }
     }
 
-    fun sound(){
+    fun sound() {
         notificationAlarm()
     }
 
@@ -300,7 +329,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                 val datetime = currentMoment.plus(3.hours)
                 val mess/*_messagesStatus.value */ = serviceProcess.getMessagesFromBot()
                 if (_status.value.isNotEmpty()) {
-                   // println("if (_status.value.isNotEmpty()) ${_status.value.isNotEmpty()}")
+                    // println("if (_status.value.isNotEmpty()) ${_status.value.isNotEmpty()}")
                     _messagesStatus.value = mess.mapIndexed { index, it ->
                         if (it.status != _status.value[index]) {
                             //println(" if (it.status != _status.value[index]) ${it.status != _status.value[index]}")
@@ -309,7 +338,7 @@ class GenerateChartViewModel(val serviceProcess: ServiceProcess = ServiceProcess
                                 date = datetime.toString()
                             )
                         } else {
-                            println("else (it.status != _status.value[index]) ${it.status != _status.value[index]}")
+                            //   println("else (it.status != _status.value[index]) ${it.status != _status.value[index]}")
                             it.copy(date = _messagesStatus.value[index].date)
                         }
 

@@ -14,4 +14,6 @@ data class ModelProcess(
     val processStatus:String="",
     val trend:Int=0,
     val color: Boolean=false,
+    val colorMin: Boolean=false,
+    val ignoreColorMin:Boolean=false,
 )

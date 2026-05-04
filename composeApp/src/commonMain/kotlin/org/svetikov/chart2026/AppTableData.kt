@@ -5,6 +5,7 @@ package org.svetikov.chart2026
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +63,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -90,7 +93,7 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
     val lastUpdateStatus by viewModel.lastUpdateStatus.collectAsState()
 
     val messageStatus by viewModel.messageStatus.collectAsState()
-
+    val ignoreNameProcessColorMin by viewModel.ignoreNameProcessColorMin.collectAsState()
 
 
     val scope = rememberCoroutineScope()
@@ -118,19 +121,23 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                         color = Color.Blue,
                         modifier = Modifier.fillMaxWidth(0.25f).clickable(onClick = { viewModel.sound() })
                     )
-
+                    var firstStart by remember { mutableStateOf(2000L) }
                     Row(modifier = Modifier.fillMaxWidth(0.5f)) {
                         messageStatus.forEach { it ->
                             var isHovered by remember { mutableStateOf(false) }
+                            var isHoveredStatus by remember { mutableStateOf(false) }
                             var isStatus by remember { mutableStateOf(false) }
-                            val st = if (it.id == 0) !it.status else it.status
-                            if (st != isStatus && !isLoading.value) {
-                                scope.launch {
-                                    isHovered = true
 
-                                    delay(10000)
+                            val st = if (it.id == 0) !it.status else it.status
+
+
+                            if (st != isStatus) {
+                                scope.launch {
+                                    isHoveredStatus = true
+                                    delay(firstStart)
+                                    firstStart = 10000L
                                     isStatus = st
-                                    isHovered = false
+                                    isHoveredStatus = false
                                 }
 
                             }
@@ -138,7 +145,7 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                                 modifier = Modifier
                                     .onPointerEvent(PointerEventType.Enter) { isHovered = true }
                                     .onPointerEvent(PointerEventType.Exit) { isHovered = false }
-                                    /*.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))*/,
+                                /*.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))*/,
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -147,7 +154,7 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                                     tint = if (st) Color.Green else Color.Red,
                                     modifier = Modifier.size(22.dp).padding(4.dp)
                                 )
-                                if (isHovered) {
+                                if (isHovered || isHoveredStatus) {
                                     Box(
                                         modifier = Modifier
                                             .offset(y = (-20).dp)
@@ -180,72 +187,149 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
             ) {
                 // item {  Text(dateTimeCountShow.value.toString(), modifier = Modifier.align(Alignment.TopCenter)) }
                 items(dataTableGroup.toList()) { (plcName, plcGroup) ->
-                   // var _isWarning by remember { mutableStateOf(false) }
+                    // var _isWarning by remember { mutableStateOf(false) }
                     var _isHideGroups by remember { mutableStateOf(true) }
+                    // if (plcGroup.any { it.color }) viewModel.sound()
                     Box(
                         Modifier.fillMaxWidth()
                             .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
                             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                             .padding(12.dp)
                     ) {
-                        Column {
-                            Text(
-                                plcName,
-                                style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
-                                else MaterialTheme.typography.titleMedium,
-                                color = if (plcGroup.any { it.color }) Color.Red.copy(alpha = 0.7f) else MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 8.dp).clickable(onClick = {_isHideGroups = !_isHideGroups})
-                            )
-                            if (_isHideGroups)
-                            plcGroup.forEach { p ->
-                              /*  if (p.processValue.toFloat() > p.processMax.toFloat()) {
-                                    _isWarning = true
-                                } else _isWarning = false*/
+                        Column(modifier = Modifier.padding(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    plcName,
+                                    style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                    else MaterialTheme.typography.titleMedium,
+                                    color = if (plcGroup.any { it.color }) Color.Red.copy(alpha = 0.7f)
+                                    else if (plcGroup.any { it.colorMin }) Color(0xFFF1AD08) else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                        .weight(1f)
+                                        .clickable(onClick = { _isHideGroups = !_isHideGroups })
+                                )
                                 Row(
-                                    modifier = Modifier.fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    horizontalArrangement = Arrangement.SpaceAround,
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Text(
-                                        p.processName,
-                                        style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
-                                        else MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        p.processValue,
-                                        style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
-                                        else MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.End,
-                                        color = if (p.color) Color.Red else Color.Black,
-                                    )
-                                    if (p.trend != 0) {
-                                        Icon(
-                                            imageVector = if (p.trend > 0) Icons.Default.ArrowDropUp
-                                            else Icons.Default.ArrowDropDown,
-                                            contentDescription = null,
-                                            tint = if (p.trend > 0) Color.Green else Color.Red,
-                                            modifier = Modifier.size(if (rowCount <= 3) 22.dp else 15.dp)
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.Coffee,
-                                            contentDescription = null,
-                                            tint = Color(0xFFC87FF3),
-                                            modifier = Modifier.size(if (rowCount <= 3) 22.dp else 15.dp)
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                            .size(16.dp)
+                                            .background(Color(0xFFEA8308), RoundedCornerShape(2.dp))
+                                    ) {
+                                        Text(plcGroup.count { it.colorMin }.toString(),
+                                            fontSize = 10.sp,
+                                            style = TextStyle(
+                                                textAlign = TextAlign.Center,
+                                                lineHeight = 10.sp,
+
+                                                ))
+                                    }
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.padding(horizontal = 4.dp)
+                                            .size(16.dp)
+                                            .background(Color(0xFFDE6E6E), RoundedCornerShape(2.dp))
+                                    ) {
+                                        Text(plcGroup.count { it.color }.toString(),
+                                            fontSize = 10.sp,
+                                            style = TextStyle(
+                                                textAlign = TextAlign.Center,
+                                                lineHeight = 10.sp,
+
+                                            )
                                         )
                                     }
                                 }
-                                HorizontalDivider(
-                                    thickness = if (p.color) 0.7.dp else 0.5.dp,
-                                    color = if (p.color) Color.Red.copy(alpha = 0.7f)
-                                    else MaterialTheme.colorScheme.outline.copy(
-                                        alpha = 0.3f
-                                    )
-                                )
                             }
+                            if (_isHideGroups)
+                                plcGroup.forEach { p ->
+                                    var showDialogMinMax by remember { mutableStateOf(false) }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                            .combinedClickable(
+                                                onClick = { showDialogMinMax = true },
+                                                onLongClick = {
+                                                    if (p.processValue.toDouble() <= 0.0)
+                                                        viewModel.ignoreNameProcessColorMinAdd(p.processName)
+                                                })
+                                            .background(
+                                                color = if (p.ignoreColorMin) Color(0xFFD47B0D)
+                                                else MaterialTheme.colorScheme.surfaceVariant
+                                            ), //todo _________________________________________________background
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val processValueScaling = " " + p.processValue
+                                        Text(
+                                            p.processName,
+                                            style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                            else MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Text(
+                                            processValueScaling,
+                                            style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                            else MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = TextAlign.End,
+                                            color = if (p.color) Color.Red else if (p.colorMin) Color(0xFFF3A307) else Color.Black,
+                                        )
+                                        if (p.trend != 0) {
+                                            Icon(
+                                                imageVector = if (p.trend > 0) Icons.Default.ArrowDropUp
+                                                else Icons.Default.ArrowDropDown,
+                                                contentDescription = null,
+                                                tint = if (p.trend > 0) Color.Green else Color.Red,
+                                                modifier = Modifier.size(if (rowCount <= 3) 22.dp else 15.dp)
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.Coffee,
+                                                contentDescription = null,
+                                                tint = Color(0xFFC87FF3),
+                                                modifier = Modifier.size(if (rowCount <= 3) 22.dp else 15.dp)
+                                            )
+                                        }
+                                    }
+                                    if (showDialogMinMax)
+                                        Box(
+                                            modifier = Modifier.offset(y = (-40).dp).fillMaxWidth()
+
+                                                .background(Color(0xFF555252))
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color.LightGray,
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                "min: ${p.processMin} max: ${p.processMax}", color = Color.White,
+                                                style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
+                                                else MaterialTheme.typography.titleMedium,
+                                                modifier = Modifier.padding(8.dp)
+                                            )
+                                            scope.launch {
+                                                delay(3000)
+                                                showDialogMinMax = false
+                                            }
+                                        }
+
+                                    HorizontalDivider(
+                                        thickness = if (p.color) 0.7.dp else 0.5.dp,
+                                        color = if (p.color) Color.Red.copy(alpha = 0.7f)
+                                        else MaterialTheme.colorScheme.outline.copy(
+                                            alpha = 0.3f
+                                        )
+                                    )
+                                }
                         }
                     }
 
@@ -264,54 +348,58 @@ fun AppTableData(rowCount: Int = 3, viewModel: GenerateChartViewModel = viewMode
                                 "Status Line",
                                 style = if (rowCount >= 3) MaterialTheme.typography.bodySmall
                                 else MaterialTheme.typography.titleMedium,
-                                color =  MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 8.dp).clickable(onClick = {_isHideGroups = !_isHideGroups})
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                                    .clickable(onClick = { _isHideGroups = !_isHideGroups })
                             )
                             if (_isHideGroups)
-                            messageStatus.forEach { it ->
+                                messageStatus.forEach { it ->
 
-                                Row(
-                                    modifier = Modifier.fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    var text = it.message + " \n" + it.date
-                                    val st = if (it.id == 0) !it.status else it.status
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        var text = it.message + " \n" + it.date
+                                        val st = if (it.id == 0) !it.status else it.status
 
-                                    if (text.length > 45)
-                                        text = text.chunked(35).joinToString("\n")
+                                        if (text.length > 45)
+                                            text = text.chunked(35).joinToString("\n")
 
-                                    Text(
-                                        text,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.fillMaxWidth(0.7f)
+                                        Text(
+                                            text,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            modifier = Modifier.fillMaxWidth(0.7f)
+                                        )
+
+
+                                        Icon(
+                                            imageVector = if (st) Icons.Default.Done else Icons.Default.Clear,
+                                            contentDescription = null,
+                                            tint = if (st) Color.Green else Color.Red,
+                                            modifier = Modifier.fillMaxWidth(0.3f)
+                                        )
+
+                                    }
+                                    HorizontalDivider(
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                                     )
-
-
-                                    Icon(
-                                        imageVector = if (st) Icons.Default.Done else Icons.Default.Clear,
-                                        contentDescription = null,
-                                        tint = if (st) Color.Green else Color.Red,
-                                        modifier = Modifier.fillMaxWidth(0.3f)
-                                    )
-
                                 }
-                                HorizontalDivider(
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-                            }
                         }
 
                     }
                 }
                 item {
-                    HorizontalDivider(
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
+                    Text(ignoreNameProcessColorMin.toString()) //todo test
+                    /*  HorizontalDivider(
+                          thickness = 0.5.dp,
+                          color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                      )*/
                 }
+
             }
+
         }
 
         if (isLoading.value && dataTableGroup.isEmpty()) {

@@ -1,16 +1,25 @@
 package org.svetikov.chart2026
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Brightness1
 import androidx.compose.material.icons.filled.Brightness7
 import androidx.compose.material.icons.filled.Nightlife
@@ -77,35 +86,79 @@ fun App() {
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        if (_isHaide)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    if (_isHaide) {
                         IconButton(onClick = { colorTheme = !colorTheme }, modifier = Modifier.fillMaxWidth(0.1f)) {
                             if (colorTheme)
                                 Icon(Icons.Default.Brightness1, contentDescription = "")
                             else
                                 Icon(Icons.Default.Brightness7, contentDescription = "")
                         }
-                        if (_isHaide)
-                        IconButton(onClick = { settingTheme = !settingTheme }, modifier = Modifier.fillMaxWidth(0.1f)) {
+                    }
+
+                    if (_isHaide) {
+                        IconButton(
+                            onClick = { settingTheme = !settingTheme },
+                            modifier = Modifier.fillMaxWidth(0.1f)
+                        ) {
                             Icon(Icons.Default.Settings, contentDescription = "")
                         }
-                        if (_isHaide)
-                        if (settingTheme)
+                    }
+
+                    if (_isHaide) {
+                        if (settingTheme) {
                             OutlinedTextField(
                                 value = rowCount,
                                 onValueChange = { rowCount = it },
-                                label = { Text("Row count") },
+                                label = { Text("row count") },
                                 minLines = 2,
-                                modifier = Modifier.width(100.dp).height(52.dp).padding(start = 8.dp),
-                                textStyle = TextStyle(fontSize = 12.sp)
-                            )
+                                modifier = Modifier.width(200.dp).height(52.dp).padding(start = 8.dp),
+                                textStyle = TextStyle(fontSize = 12.sp),
+                                trailingIcon = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center,
+                                    ) {
+                                        IconButton(onClick = {
+                                            if (rowCount.toInt() < 10)
+                                                rowCount = (rowCount.toInt() + 1).toString()
 
+                                        }) {
+                                            Icon(
+                                                Icons.Default.ArrowDropUp,
+                                                contentDescription = "row count up"
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        IconButton(onClick = {
+                                            if (rowCount.toInt() >= 3)
+                                                rowCount = (rowCount.toInt() - 1).toString()
+
+                                        }) {
+                                            Icon(
+                                                Icons.Default.ArrowDropDown,
+                                                contentDescription = "row count down"
+                                            )
+                                        }
+
+                                    }
+                                }
+                            )
+                        }
                     }
+                    if (_isHaide)
+                    Box(modifier = Modifier.fillMaxWidth(),
+                        contentAlignment =Alignment.CenterEnd) {
+                        Text("Svetikov 2026", fontSize = 12.sp, color = Color(0xffffffff))
+                    }
+
+                }
             }
+
 
             // }
 
@@ -113,7 +166,7 @@ fun App() {
             // ShowAllCharts(colorTheme=colorTheme)
             AppTableData(rowCount = if (rowCount.isNotEmpty()) rowCount.toInt() else 3)
         }
-
-
     }
+
 }
+
