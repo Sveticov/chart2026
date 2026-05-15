@@ -57,7 +57,7 @@ fun App() {
     MaterialTheme {
         var colorTheme by remember { mutableStateOf(true) }
         var settingTheme by remember { mutableStateOf(false) }
-        var rowCount by remember { mutableStateOf("3") }
+        var rowCount by remember { mutableStateOf("5") }
         var _isHaide by remember { mutableStateOf(false) }
         /*   var showContent by remember { mutableStateOf(false) }
            Column(
@@ -78,89 +78,92 @@ fun App() {
                         Color(0xFF6F7272)
                 )
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onPointerEvent(PointerEventType.Enter) { _isHaide = true }
-                    .onPointerEvent(PointerEventType.Exit) { _isHaide = false }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
+           // AnimatedVisibility(visible = _isHaide) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onPointerEvent(PointerEventType.Enter) { _isHaide = true }
+                        .onPointerEvent(PointerEventType.Exit) { _isHaide = false }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    if (_isHaide) {
-                        IconButton(onClick = { colorTheme = !colorTheme }, modifier = Modifier.fillMaxWidth(0.1f)) {
-                            if (colorTheme)
-                                Icon(Icons.Default.Brightness1, contentDescription = "")
-                            else
-                                Icon(Icons.Default.Brightness7, contentDescription = "")
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        if (_isHaide) {
+                            IconButton(onClick = { colorTheme = !colorTheme }, modifier = Modifier.fillMaxWidth(0.1f)) {
+                                if (colorTheme)
+                                    Icon(Icons.Default.Brightness1, contentDescription = "")
+                                else
+                                    Icon(Icons.Default.Brightness7, contentDescription = "")
+                            }
                         }
-                    }
 
-                    if (_isHaide) {
-                        IconButton(
-                            onClick = { settingTheme = !settingTheme },
-                            modifier = Modifier.fillMaxWidth(0.1f)
-                        ) {
-                            Icon(Icons.Default.Settings, contentDescription = "")
+                        if (_isHaide) {
+                            IconButton(
+                                onClick = { settingTheme = !settingTheme },
+                                modifier = Modifier.fillMaxWidth(0.1f)
+                            ) {
+                                Icon(Icons.Default.Settings, contentDescription = "")
+                            }
                         }
-                    }
 
-                    if (_isHaide) {
-                        if (settingTheme) {
-                            OutlinedTextField(
-                                value = rowCount,
-                                onValueChange = { rowCount = it },
-                                label = { Text("row count") },
-                                minLines = 2,
-                                modifier = Modifier.width(200.dp).height(52.dp).padding(start = 8.dp),
-                                textStyle = TextStyle(fontSize = 12.sp),
-                                trailingIcon = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.Center,
-                                    ) {
-                                        IconButton(onClick = {
-                                            if (rowCount.toInt() < 10)
-                                                rowCount = (rowCount.toInt() + 1).toString()
+                        if (_isHaide) {
+                            if (settingTheme) {
+                                OutlinedTextField(
+                                    value = rowCount,
+                                    onValueChange = { rowCount = it },
+                                    label = { Text("row count") },
+                                    minLines = 2,
+                                    modifier = Modifier.width(200.dp).height(52.dp).padding(start = 8.dp),
+                                    textStyle = TextStyle(fontSize = 12.sp),
+                                    trailingIcon = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center,
+                                        ) {
+                                            IconButton(onClick = {
+                                                if (rowCount.toInt() < 10)
+                                                    rowCount = (rowCount.toInt() + 1).toString()
 
-                                        }) {
-                                            Icon(
-                                                Icons.Default.ArrowDropUp,
-                                                contentDescription = "row count up"
-                                            )
+                                            }) {
+                                                Icon(
+                                                    Icons.Default.ArrowDropUp,
+                                                    contentDescription = "row count up"
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            IconButton(onClick = {
+                                                if (rowCount.toInt() >= 3)
+                                                    rowCount = (rowCount.toInt() - 1).toString()
+
+                                            }) {
+                                                Icon(
+                                                    Icons.Default.ArrowDropDown,
+                                                    contentDescription = "row count down"
+                                                )
+                                            }
+
                                         }
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        IconButton(onClick = {
-                                            if (rowCount.toInt() >= 3)
-                                                rowCount = (rowCount.toInt() - 1).toString()
-
-                                        }) {
-                                            Icon(
-                                                Icons.Default.ArrowDropDown,
-                                                contentDescription = "row count down"
-                                            )
-                                        }
-
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
-                    }
-                    if (_isHaide)
-                    Box(modifier = Modifier.fillMaxWidth(),
-                        contentAlignment =Alignment.CenterEnd) {
-                        Text("Svetikov 2026", fontSize = 12.sp, color = Color(0xffffffff))
-                    }
+                        if (_isHaide)
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Text("Svetikov 2026", fontSize = 12.sp, color = Color(0xffffffff))
+                            }
 
+                    }
                 }
-            }
 
 
-            // }
+           // }//AnimatedVisibility
 
             // RealTimeChartScreen(colorTheme=colorTheme)
             // ShowAllCharts(colorTheme=colorTheme)
