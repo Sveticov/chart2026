@@ -22,10 +22,12 @@ import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Brightness1
 import androidx.compose.material.icons.filled.Brightness7
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Nightlife
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ViewDay
 import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,6 +61,7 @@ fun App() {
         var settingTheme by remember { mutableStateOf(false) }
         var rowCount by remember { mutableStateOf("5") }
         var _isHaide by remember { mutableStateOf(false) }
+        var _switchedStorageOrModelProcess by remember { mutableStateOf(false) }
         /*   var showContent by remember { mutableStateOf(false) }
            Column(
                modifier = Modifier
@@ -73,12 +76,12 @@ fun App() {
                 /*.onPointerEvent(PointerEventType.Enter) { _isHaide = true }
                 .onPointerEvent(PointerEventType.Exit) { _isHaide = false }*/
                 .background(
-                    if (colorTheme) Color(0xFFABAFAF)
+                    if (colorTheme)  Color(0xFF6F7272)
                     else
-                        Color(0xFF6F7272)
+                        Color(0xFFABAFAF)
                 )
         ) {
-           // AnimatedVisibility(visible = _isHaide) {
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -151,6 +154,14 @@ fun App() {
                                 )
                             }
                         }
+                        if (_isHaide) {
+                            IconButton(
+                                onClick = { _switchedStorageOrModelProcess=!_switchedStorageOrModelProcess },
+                                modifier = Modifier.fillMaxWidth(0.1f)
+                            ) {
+                                Icon(Icons.Default.Checklist, contentDescription = "switchedStorageOrModelProcess")
+                            }
+                        }
                         if (_isHaide)
                             Box(
                                 modifier = Modifier.fillMaxWidth(),
@@ -162,12 +173,16 @@ fun App() {
                     }
                 }
 
-
-           // }//AnimatedVisibility
-
-            // RealTimeChartScreen(colorTheme=colorTheme)
-            // ShowAllCharts(colorTheme=colorTheme)
+            if (_switchedStorageOrModelProcess)
+            AppStorage()
+            else
             AppTableData(rowCount = if (rowCount.isNotEmpty()) rowCount.toInt() else 3)
+            HorizontalDivider(
+                thickness = 1.dp ,
+                color =  Color.Black.copy(alpha = 1f)
+
+            )
+
         }
     }
 

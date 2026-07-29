@@ -11,18 +11,18 @@ plugins {
 }
 
 kotlin {
-    jvm()
+  //  jvm()
 
     js(IR) {
         browser()
         binaries.executable()
     }
 
-    @OptIn(ExperimentalWasmDsl::class)
+  /*  @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         binaries.executable()
-    }
+    }*/
 
     sourceSets {
         commonMain.dependencies {
@@ -62,10 +62,10 @@ kotlin {
         val jsMain by getting {
             dependsOn(webMain)
         }
-        @OptIn(ExperimentalWasmDsl::class)
+ /*       @OptIn(ExperimentalWasmDsl::class)
         val wasmJsMain by getting {
             dependsOn(webMain)
-        }
+        }*/
 
     }
 }
